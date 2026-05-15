@@ -13,7 +13,8 @@ public class PersonQueue
     /// <param name="person">The person to add</param>
     public void Enqueue(Person person)
     {
-        _queue.Insert(0, person);
+        // FIX: Was _queue.Insert(0, person) which added to the FRONT, breaking FIFO order.
+        _queue.Add(person);
     }
 
     public Person Dequeue()
