@@ -1,106 +1,136 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 
 public static class SetsAndMaps
 {
-    /// <summary>
-    /// The words parameter contains a list of two character 
-    /// words (lower case, no duplicates). Using sets, find an O(n) 
-    /// solution for returning all symmetric pairs of words.  
-    ///
-    /// For example, if words was: [am, at, ma, if, fi], we would return :
-    ///
-    /// ["am & ma", "if & fi"]
-    ///
-    /// The order of the array does not matter, nor does the order of the specific words in each string in the array.
-    /// at would not be returned because ta is not in the list of words.
-    ///
-    /// As a special case, if the letters are the same (example: 'aa') then
-    /// it would not match anything else (remember the assumption above
-    /// that there were no duplicates) and therefore should not be returned.
-    /// </summary>
-    /// <param name="words">An array of 2-character words (lowercase, no duplicates)</param>
+    // Problem 1 - Find Pairs with Sets
+    // Finds symmetric pairs of two-letter words (e.g. "am" & "ma") in O(n) time.
     public static string[] FindPairs(string[] words)
     {
-        // TODO Problem 1 - ADD YOUR CODE HERE
-        return [];
+        HashSet<string> set = new HashSet<string>(words);
+        List<string> result = new List<string>();
+
+        foreach (string word in words)
+        {
+            // Skip palindrome-like words (e.g. "aa") — they can't have a distinct reverse
+            if (word[0] == word[1])
+                continue;
+
+            string reverse = $"{word[1]}{word[0]}";
+
+            // Only add the pair once by enforcing lexicographic order
+            if (set.Contains(reverse) && String.Compare(word, reverse) < 0)
+            {
+                result.Add($"{word} & {reverse}");
+            }
+        }
+
+        return result.ToArray();
     }
 
-    /// <summary>
-    /// Read a census file and summarize the degrees (education)
-    /// earned by those contained in the file.  The summary
-    /// should be stored in a dictionary where the key is the
-    /// degree earned and the value is the number of people that 
-    /// have earned that degree.  The degree information is in
-    /// the 4th column of the file.  There is no header row in the
-    /// file.
-    /// </summary>
-    /// <param name="filename">The name of the file to read</param>
-    /// <returns>fixed array of divisors</returns>
+    // Problem 2 - Degree Summary
+    // Reads a CSV file and counts how many people hold each type of degree (column index 3).
     public static Dictionary<string, int> SummarizeDegrees(string filename)
     {
-        var degrees = new Dictionary<string, int>();
-        foreach (var line in File.ReadLines(filename))
+        Dictionary<string, int> degrees = new Dictionary<string, int>();
+
+        // Skip(1) skips the header row if one exists — safe to remove if census.txt has no header
+        foreach (string line in File.ReadAllLines(filename).Skip(1))
         {
-            var fields = line.Split(",");
-            // TODO Problem 2 - ADD YOUR CODE HERE
+            string[] parts = line.Split(',');
+
+            if (parts.Length < 4)
+                continue;
+
+            string degree = parts[3].Trim();
+
+            if (string.IsNullOrEmpty(degree))
+                continue;
+
+            if (degrees.ContainsKey(degree))
+                degrees[degree]++;
+            else
+                degrees[degree] = 1;
         }
 
         return degrees;
     }
 
-    /// <summary>
-    /// Determine if 'word1' and 'word2' are anagrams.  An anagram
-    /// is when the same letters in a word are re-organized into a 
-    /// new word.  A dictionary is used to solve the problem.
-    /// 
-    /// Examples:
-    /// is_anagram("CAT","ACT") would return true
-    /// is_anagram("DOG","GOOD") would return false because GOOD has 2 O's
-    /// 
-    /// Important Note: When determining if two words are anagrams, you
-    /// should ignore any spaces.  You should also ignore cases.  For 
-    /// example, 'Ab' and 'Ba' should be considered anagrams
-    /// 
-    /// Reminder: You can access a letter by index in a string by 
-    /// using the [] notation.
-    /// </summary>
+    // Problem 3 - Anagrams
+    // Returns true if word1 and word2 are anagrams (same letters, same counts).
+    // Ignores spaces and letter case.
     public static bool IsAnagram(string word1, string word2)
     {
-        // TODO Problem 3 - ADD YOUR CODE HERE
-        return false;
+        word1 = word1.Replace(" ", "").ToLower();
+        word2 = word2.Replace(" ", "").ToLower();
+
+        // Quick length check — anagrams must have equal length
+        if (word1.Length != word2.Length)
+            return false;
+
+        Dictionary<char, int> counts = new Dictionary<char, int>();
+
+        // Count frequency of each letter in word1
+        foreach (char c in word1)
+        {
+            if (counts.ContainsKey(c))
+                counts[c]++;
+            else
+                counts[c] = 1;
+        }
+
+        // Subtract frequency using word2; any mismatch means not an anagram
+        foreach (char c in word2)
+        {
+            if (!counts.ContainsKey(c))
+                return false;
+
+            counts[c]--;
+
+            if (counts[c] < 0)
+                return false;
+        }
+
+        return true;
     }
 
-    /// <summary>
-    /// This function will read JSON (Javascript Object Notation) data from the 
-    /// United States Geological Service (USGS) consisting of earthquake data.
-    /// The data will include all earthquakes in the current day.
-    /// 
-    /// JSON data is organized into a dictionary. After reading the data using
-    /// the built-in HTTP client library, this function will return a list of all
-    /// earthquake locations ('place' attribute) and magnitudes ('mag' attribute).
-    /// Additional information about the format of the JSON data can be found 
-    /// at this website:  
-    /// 
-    /// https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
-    /// 
-    /// </summary>
+    // Problem 5 - Earthquake JSON Data
+    // Fetches today's earthquake data from USGS and returns formatted summary strings.
     public static string[] EarthquakeDailySummary()
     {
-        const string uri = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
-        using var client = new HttpClient();
-        using var getRequestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
-        using var jsonStream = client.Send(getRequestMessage).Content.ReadAsStream();
-        using var reader = new StreamReader(jsonStream);
-        var json = reader.ReadToEnd();
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        const string url =
+            "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
 
-        var featureCollection = JsonSerializer.Deserialize<FeatureCollection>(json, options);
+        using HttpClient client = new HttpClient();
 
-        // TODO Problem 5:
-        // 1. Add code in FeatureCollection.cs to describe the JSON using classes and properties 
-        // on those classes so that the call to Deserialize above works properly.
-        // 2. Add code below to create a string out each place a earthquake has happened today and its magitude.
-        // 3. Return an array of these string descriptions.
-        return [];
+        string json = client.GetStringAsync(url).Result;
+
+        JsonSerializerOptions options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        FeatureCollection featureCollection =
+            JsonSerializer.Deserialize<FeatureCollection>(json, options);
+
+        List<string> result = new List<string>();
+
+        foreach (Feature feature in featureCollection.Features)
+        {
+            string place = feature.Properties.Place;
+            double? mag = feature.Properties.Mag;
+
+            // Skip entries that are missing location or magnitude data
+            if (string.IsNullOrEmpty(place))
+                continue;
+
+            result.Add($"{place} - Mag {mag ?? 0}");
+        }
+
+        return result.ToArray();
     }
 }
