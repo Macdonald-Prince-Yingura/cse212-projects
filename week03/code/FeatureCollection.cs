@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 public class FeatureCollection
 {
     public List<Feature> Features { get; set; }

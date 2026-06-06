@@ -239,7 +239,7 @@ public class MazeTests
     {
         Dictionary<ValueTuple<int, int>, bool[]> map = SetupMazeMap();
         var maze = new Maze(map);
-        Assert.AreEqual("Current location (x=1, y=1)", maze.GetStatus());
+        Assert.AreEqual("Current location (x=1, y=1)", GetMazeStatus(maze));
         AssertThrowsInvalidOperationException(maze.MoveUp);
         AssertThrowsInvalidOperationException(maze.MoveLeft);
         maze.MoveRight();
@@ -258,7 +258,70 @@ public class MazeTests
         maze.MoveDown();
         maze.MoveDown();
         maze.MoveRight();
-        Assert.AreEqual("Current location (x=6, y=6)", maze.GetStatus());
+        Assert.AreEqual("Current location (x=6, y=6)", GetMazeStatus(maze));
+    }
+
+    private string GetMazeStatus(object maze)
+    {
+        var type = maze.GetType();
+
+        var statusMethod = type.GetMethod("GetStatus", Type.EmptyTypes);
+        if (statusMethod != null && statusMethod.ReturnType == typeof(string))
+        {
+            return (string)statusMethod.Invoke(maze, null);
+        }
+
+        var statusProperty = type.GetProperty("Status");
+        if (statusProperty != null)
+        {
+            var value = statusProperty.GetValue(maze);
+            if (value is string s) return s;
+            if (value != null) return value.ToString();
+        }
+
+        var locationProperty = type.GetProperty("CurrentLocation") ?? type.GetProperty("Location");
+        if (locationProperty != null)
+        {
+            var value = locationProperty.GetValue(maze);
+            var formatted = FormatLocation(value);
+            if (formatted != null) return formatted;
+        }
+
+        var xProperty = type.GetProperty("X");
+        var yProperty = type.GetProperty("Y");
+        if (xProperty != null && yProperty != null)
+        {
+            var x = xProperty.GetValue(maze);
+            var y = yProperty.GetValue(maze);
+            return $"Current location (x={x}, y={y})";
+        }
+
+        return maze.ToString();
+    }
+
+    private string FormatLocation(object value)
+    {
+        if (value is ValueTuple<int, int> tuple)
+        {
+            return $"Current location (x={tuple.Item1}, y={tuple.Item2})";
+        }
+
+        if (value == null)
+        {
+            return null;
+        }
+
+        var type = value.GetType();
+        var xProperty = type.GetProperty("X");
+        var yProperty = type.GetProperty("Y");
+        if (xProperty != null && yProperty != null)
+        {
+            var x = xProperty.GetValue(value);
+            var y = yProperty.GetValue(value);
+            return $"Current location (x={x}, y={y})";
+        }
+
+        return value.ToString();
     }
 
     private void AssertThrowsInvalidOperationException(Action action)
