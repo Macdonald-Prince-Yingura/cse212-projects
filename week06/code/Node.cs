@@ -11,35 +11,40 @@ public class Node
 
     public void Insert(int value)
     {
-        // TODO Start Problem 1
-
+        // Problem 1: only insert if value is unique
         if (value < Data)
         {
-            // Insert to the left
             if (Left is null)
                 Left = new Node(value);
             else
                 Left.Insert(value);
         }
-        else
+        else if (value > Data)  // changed from else to else if — blocks duplicates
         {
-            // Insert to the right
             if (Right is null)
                 Right = new Node(value);
             else
                 Right.Insert(value);
         }
+        // if value == Data, do nothing (duplicate ignored)
     }
 
     public bool Contains(int value)
     {
-        // TODO Start Problem 2
-        return false;
+        // Problem 2: recursively search left or right based on value
+        if (value == Data)
+            return true;
+        else if (value < Data)
+            return Left is not null && Left.Contains(value);
+        else
+            return Right is not null && Right.Contains(value);
     }
 
     public int GetHeight()
     {
-        // TODO Start Problem 4
-        return 0; // Replace this line with the correct return statement(s)
+        // Problem 4: height = 1 + the taller of left or right subtrees
+        int leftHeight  = Left  is null ? 0 : Left.GetHeight();
+        int rightHeight = Right is null ? 0 : Right.GetHeight();
+        return 1 + Math.Max(leftHeight, rightHeight);
     }
 }
